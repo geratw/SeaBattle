@@ -8,45 +8,30 @@ const sequelize = new Sequelize("database", "username", "password", {
 
 exports.register = async (req, res) => {
   const { username, password } = req.body;
-
   try {
-    // Проверяем, существует ли пользователь с таким именем
     const existingUser = await User.findOne({ where: { username } });
-
     if (existingUser) {
       return res.status(400).json({ error: "The username is already taken" });
     }
-
-    // Создаем нового пользователя
     const newUser = await User.create({
       username,
       password,
       games_played: [],
       counter_games_win: 0,
     });
-
-    // Возвращаем созданного пользователя в ответе
     res.json(newUser);
   } catch (error) {
-    // Обработка ошибок
     console.error("Error creating user:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-
   try {
-    // Поиск пользователя по имени пользователя
     const user = await User.findOne({ where: { username } });
-
     if (user) {
-      // Проверка совпадения пароля
       const isPasswordMatch = user.password === password;
-
-      // Возвращаем true или false в зависимости от совпадения паролей
       res.json({ success: isPasswordMatch });
     } else {
       res.json({ success: false });
@@ -60,7 +45,7 @@ exports.login = async (req, res) => {
 exports.bestPlayers = async (req, res) => {
   try {
     const bestPlayers = await User.findAll({
-      attributes: ["id"],
+      attributes: ["username", "counter_games_win", "games_played"],
       where: {
         games_played: {
           [Sequelize.Op.and]: [
@@ -70,9 +55,15 @@ exports.bestPlayers = async (req, res) => {
         },
       },
     });
-
-    const bestPlayersIds = bestPlayers.map((player) => player.id);
-    res.json({ success: true, bestPlayersIds });
+    const updatedBestPlayers = bestPlayers.map((player) => {
+      return {
+        username: player.username,
+        counter_game: player.games_played.length,
+        counter_win: player.counter_games_win,
+        counter_loss: player.games_played.length - player.counter_games_win,
+      };
+    });
+    res.json({ bestPlayers: updatedBestPlayers });
   } catch (error) {
     console.error("Error fetching best players:", error);
     res.status(500).json({ success: false, error: error.message });
@@ -81,37 +72,48 @@ exports.bestPlayers = async (req, res) => {
 
 exports.addNewGame = async (req, res) => {
   const { user_id, isWin } = req.body;
-
   try {
-    // Проверяем существование пользователя
     const user = await User.findByPk(user_id);
-
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    // Создаем новую игру
     const newGame = await Game.create({
       user_id,
       isWin,
     });
-
-    // Проверяем, что games_played является массивом
     let gamesPlayed = user.games_played || [];
-
-    // Добавляем новую игру в games_played
     gamesPlayed.push(newGame.id);
-
-    // Обновляем games_played в базе данных
     await user.update({
       games_played: sequelize.literal(`ARRAY[${gamesPlayed}]::INTEGER[]`),
       counter_games_win: isWin ? (user.counter_games_win || 0) + 1 : user.counter_games_win,
     });
-
-    // Возвращаем созданную игру в ответе
     res.json(newGame);
   } catch (error) {
     console.error("Error creating game:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.myStats = async (req, res) => {
+  const user_id = req.params.user_id;
+  try {
+    const user = await User.findByPk(user_id);
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    const gamesPlayed = user.games_played ? user.games_played.length : 0;
+    const gamesWin = user.counter_games_win || 0;
+    const gamesLost = gamesPlayed - gamesWin;
+    const username = user.username;
+    const stats = {
+      username,
+      gamesPlayed,
+      gamesWin,
+      gamesLost,
+    };
+    res.json(stats);
+  } catch (error) {
+    console.error("Error fetching user stats:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

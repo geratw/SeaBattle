@@ -4,15 +4,18 @@ const controller = require("../controllers/controller.js");
 const router = Router();
 
 // GET /register — клиент регистрируется.
-router.post("/signUp", controller.register);
+router.post("/api/signUp", controller.register);
 
 // GET /login — вход в систему.
-router.get("/signIn", controller.login);
+router.get("/api/signIn", controller.login);
 
-// // GET /bestPlayers — получить массив игроков, у которых число игр больше 10.
-router.get("/bestPlayers", controller.bestPlayers);
+// // GET /bestPlayers — получить массив объектов игроков, у которых число игр больше 10.
+router.get("/api/bestPlayers", controller.bestPlayers);
 
 // // POST / —  добавление игры.
-router.post("/", controller.addNewGame);
+router.post("/api/", controller.addNewGame);
+
+// // get /myStats/:user_id — получение данных о пользователе.
+router.get("/api/myStats/:user_id", controller.myStats);
 
 module.exports = router;
