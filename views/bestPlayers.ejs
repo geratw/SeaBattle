@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Лучшие игроки</title>
+</head>
+<body>
+  <h1>Лучшие игроки</h1>
+  <ul>
+    <% updatedBestPlayers.forEach(player => { %>
+      <li>
+        Имя игрока: <%= player.username %><br>
+        Количество побед: <%= player.counter_win %><br>
+        Общее количество сыгранных игр: <%= player.counter_game %>
+      </li>
+    <% }); %>
+  </ul>
+</body>
+</html>

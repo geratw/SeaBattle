@@ -1,6 +1,7 @@
 const { Sequelize } = require("sequelize");
 const { Game, User } = require("../models");
 
+
 const sequelize = new Sequelize("database", "username", "password", {
   host: "localhost",
   dialect: "postgres",
@@ -61,9 +62,11 @@ exports.bestPlayers = async (req, res) => {
         counter_game: player.games_played.length,
         counter_win: player.counter_games_win,
         counter_loss: player.games_played.length - player.counter_games_win,
+        percentage_of_wins: parseInt((player.counter_games_win / player.games_played.length) * 100),
       };
     });
-    res.json({ bestPlayers: updatedBestPlayers });
+    res.render('bestPlayers.ejs', { updatedBestPlayers });
+    // res.json({ bestPlayers: updatedBestPlayers });
   } catch (error) {
     console.error("Error fetching best players:", error);
     res.status(500).json({ success: false, error: error.message });
@@ -104,12 +107,14 @@ exports.myStats = async (req, res) => {
     const gamesPlayed = user.games_played ? user.games_played.length : 0;
     const gamesWin = user.counter_games_win || 0;
     const gamesLost = gamesPlayed - gamesWin;
+    const percentageOfWins = gamesWin !== 0 ? parseInt((gamesWin / gamesPlayed) * 100) : 0;
     const username = user.username;
     const stats = {
       username,
       gamesPlayed,
       gamesWin,
       gamesLost,
+      percentageOfWins,
     };
     res.json(stats);
   } catch (error) {
@@ -117,3 +122,4 @@ exports.myStats = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
